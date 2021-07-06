@@ -1,0 +1,18 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=2]
+
+[sub_resource type="Shader" id=1]
+code = "shader_type canvas_item;
+
+uniform float prop : hint_range(0, 1) = 1.0;
+
+//masks over divided
+void fragment() {
+	if ((1.0*UV.x + 0.2 * UV.y) < 1.2*prop) {
+		COLOR = texture(TEXTURE, UV) * vec4(1.0, prop, prop, 1);
+	}
+	else COLOR = vec4(0);
+}"
+
+[resource]
+shader = SubResource( 1 )
+shader_param/prop = 1.0

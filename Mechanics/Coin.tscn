@@ -1,0 +1,26 @@
+[gd_scene load_steps=5 format=2]
+
+[ext_resource path="res://Assets/Coin Sprites.png" type="Texture" id=1]
+[ext_resource path="res://Mechanics/Coin.gd" type="Script" id=2]
+[ext_resource path="res://Assets/bullet.png" type="Texture" id=3]
+
+[sub_resource type="CircleShape2D" id=1]
+radius = 5.13004
+
+[node name="Coin" type="KinematicBody2D"]
+collision_layer = 0
+collision_mask = 2
+script = ExtResource( 2 )
+
+[node name="Shadow" type="Sprite" parent="."]
+self_modulate = Color( 0, 0, 0, 1 )
+position = Vector2( -0.0687923, 1.05255 )
+texture = ExtResource( 3 )
+
+[node name="Sprites" type="Sprite" parent="."]
+texture = ExtResource( 1 )
+hframes = 2
+vframes = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource( 1 )
