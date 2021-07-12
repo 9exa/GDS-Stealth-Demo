@@ -9,6 +9,7 @@ var height = 12
 var vertVel = 25
 var t = 0
 var anstage = 0
+var pingRadius = -1
 
 signal CoinDropped(at)
 
@@ -23,6 +24,8 @@ func _physics_process(delta):
 	if height < 0:
 		height = 0
 		emit_signal("CoinDropped", global_position)
+		t = 0
+		pingRadius = 0
 	elif height> 0:
 		var col = move_and_collide(velocity*delta)
 		if col != null:
@@ -41,4 +44,15 @@ func _physics_process(delta):
 	
 	if t > 5:
 		queue_free()
-	
+
+func _process(delta):
+	if pingRadius >= 0:
+		pingRadius += 2 * 150 * (2 * t+1) * delta  #quadratics baybe
+		update()
+	if pingRadius > 150:
+		pingRadius = -1
+		update()
+
+func _draw():
+	if pingRadius > 0:
+		draw_arc(Vector2(), pingRadius, 0, 2*PI, 40, Color.orange, 3)

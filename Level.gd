@@ -2,7 +2,7 @@ extends Node2D
 
 
 var score = 0
-var alarm = false
+var alarm = false setget setAlarm
 var atime = 0.0
 
 
@@ -38,9 +38,13 @@ func playerAtExit(p):
 
 func winScreen():
 	$UI/PauseScreen.set_visible(true)
+	$UI/PauseScreen/winlose.set_visible(true)
+	$UI/PauseScreen/winlose.frame = 1
 	$UI/PauseScreen/PauseText.set_text("You actually did it?! \n No more pizzas for GDS")
 func loseScreen():
+	yield(get_tree().create_timer(3), "timeout")
 	$UI/PauseScreen.set_visible(true)
+	$UI/PauseScreen/winlose.set_visible(true)
 	$UI/PauseScreen/PauseText.set_text("Ya LOST! \n Like the LOSER you are!")
 func updateUI():
 	
@@ -56,6 +60,8 @@ func _ready():
 	$ExitZone.connect("body_entered", self, "playerAtExit")
 	player.connect("justDied", self, "loseScreen")
 	player.connect("justHit", self, "playerHealthChanged")
+	playerHealthChanged(null)
+	updateUI()
 	pass # Replace with function body.
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
@@ -69,6 +75,8 @@ func _unhandled_key_input(event):
 		debugmode = true
 	if event.scancode == KEY_ESCAPE:
 		get_tree().call_deferred("reload_current_scene")
+	if event.scancode == KEY_P:
+		get_tree().paused = !get_tree().paused
 #func _unhandled_input(event):
 #	if event is InputEventMouseButton and debugmode:
 #		if event.button_index == BUTTON_LEFT and event.pressed:

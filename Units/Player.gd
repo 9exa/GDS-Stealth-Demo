@@ -46,10 +46,13 @@ func _process(delta):
 	checkForInteractables()
 	
 
-func _physics_process(delta):
-	inputMovement(delta)
-	var col = move_and_collide(velocity*delta)
-func inputMovement(delta):
+func _physicsFrame(delta):
+	._physicsFrame(delta)
+	if !isDead:
+		inputMovement()
+	move_and_collide(velocity * delta)
+
+func inputMovement():
 	var disp = Vector2(0,0)
 	if Input.is_key_pressed(KEY_W):
 		disp += Vector2(0,-1)
@@ -59,10 +62,9 @@ func inputMovement(delta):
 		disp += Vector2(-1, 0)
 	if Input.is_key_pressed(KEY_D):
 		disp += Vector2(1, 0)
-	if disp.length_squared() > 0:
-		walk(disp.normalized() * WALKSPEED)
-	else:
-		velocity = disp
+	velocity = disp.normalized() * WALKSPEED
+	if velocity != Vector2():
+		facing = velocity
 
 func _unhandled_key_input(event):
 	if event.scancode == KEY_E and event.pressed:

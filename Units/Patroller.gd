@@ -1,4 +1,4 @@
-extends KinematicBody2D
+extends Character
 
 # Declare member variables here. Examples:
 # var a = 2

@@ -19,16 +19,17 @@ const WALKSPEED = 96
 const SIGHTRANGE = 150
 const SIGHTANGLE = PI/4 #how wide the character can see
 #direction character is facing
-var facing := Vector2(0, 1)
+export var facing := Vector2(0, 1)
 var velocity := Vector2()
 var basefacing : Vector2 # for looking around
 
 
+signal noticedCoin(at)
 
 #combat stuff
 const bullets = preload("res://Mechanics/bullet.tscn")
 const MAXSHOTCD = 0.2
-const BULLETSPEED = 32*8
+const BULLETSPEED = 32*16
 var shotCD = MAXSHOTCD
 var drawVision = true
 
@@ -36,11 +37,17 @@ var drawVision = true
 enum {NONE, QUESTION, ECLAIMATION}
 func showExclaim(n):
 	$Exclaims.frame = n
+func setDialog(s):
+	$Dialog.text = str(s)
+
+func _onCoinDropped(at):
+	if (at - position).length() < SIGHTRANGE:
+		emit_signal("noticedCoin", at)
 
 #pathfinding
 var path: PoolVector2Array
 var pathLines = Line2D.new()
-const RANDPATHRANGE = 200
+const RANDPATHRANGE = 100
 
 func hasPath():
 	return !path.empty()
@@ -49,7 +56,7 @@ func requestPath(arg = "Random"):
 	var p
 	match typeof(arg):
 		TYPE_STRING:
-			p = position + RANDPATHRANGE * Vector2(randf(), randf())
+			p = position + RANDPATHRANGE * polar2cartesian(randf(),2*PI*randf())
 			p = nav.get_simple_path(position, p)
 		TYPE_VECTOR2:
 			p = nav.get_simple_path(position, arg)
@@ -71,14 +78,27 @@ func moveAlongPath(delta):
 			endpoint = path[0]
 			path.remove(0)
 		toWalk -= segLength
-		
-	pathLines.points = path
+	
 	var p = path
 	p.insert(0,position)
 	pathLines.points = p
 	if endpoint != position:
-		walk((endpoint-position) /delta)
-		
+		var diff = endpoint - position
+		move_and_collide(diff)
+		walk(diff)
+		facing = (diff)
+
+#how alarming
+func alarmInRange():
+	var levers = level.get_node("Levers").get_children()
+	for l in levers:
+		var diff = l.global_position - global_position
+		if diff.length() < SIGHTRANGE:
+			return l
+func activateAlarm():
+	level.alarm = true
+func deactivateAlarm():
+	level.alarm = false
 
 static func isBetween(a, lo, hi):
 	return lo < a and a < hi
@@ -92,6 +112,7 @@ func shoot():
 		shotCD = MAXSHOTCD
 
 func dieAnimation():
+	$AnimationPlayer.stop()
 	$Spritesheet.frame = 12
 
 
@@ -106,6 +127,8 @@ func canSeePlayer():
 						-SIGHTANGLE, SIGHTANGLE)):
 			return true
 	return false
+func playerInRange():
+	return (global_position - level.player.global_position).length() <= SIGHTRANGE
 func getAllSeeableEnemies():
 	var out = []
 	var player = level.player
@@ -125,12 +148,11 @@ func canSeeDeadEnemy():
 		if "isDead" in e and e.isDead:
 			return true
 
-func alarmInRange():
-	var levers = level.get_node("Levers").get_children()
-	for l in levers:
-		var diff = l.global_position - global_position
-		if diff.length() < SIGHTRANGE:
-			return l
+
+func facePlayer():
+	if level.player != null:
+		facing = level.player.global_position - global_position
+
 func walk(vec):
 	$Spritesheet.flip_h = true if vec.x < 0 else false
 	var a = vec.angle()
@@ -140,14 +162,14 @@ func walk(vec):
 		$AnimationPlayer.current_animation = "Walk Down"
 	else:
 		$AnimationPlayer.current_animation = "Walk Right"
-	velocity = vec
-	facing = vec
 func idleAnimation(vec):
 	if vec == Vector2(): return
+	$AnimationPlayer.stop()
 	var a = vec.angle()
-	if -3/4*PI < a and a < -1/4 * PI:
+	$Spritesheet.flip_h = true if vec.x < 0 else false
+	if -0.75*PI < a and a < -0.25 * PI:
 		$Spritesheet.frame = 8
-	elif 1/4*PI < a and a < 3/4 * PI:
+	elif 0.25*PI < a and a < 0.75 * PI:
 		$Spritesheet.frame = 0
 	else:
 		$Spritesheet.frame = 4
@@ -157,6 +179,7 @@ func _ready():
 	pathLines.default_color = Color.orange
 	pathLines.width = 2
 	level.call_deferred("add_child", pathLines)
+	level.connect("CoinDropped", self, "_onCoinDropped")
 	add_to_group("Enemies")
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
@@ -164,20 +187,24 @@ func _process(delta):
 	shotCD -= delta
 	pass
 
-func _physics_process(delta):
+func _physicsFrame(delta):#damn you godot!
 	velocity = Vector2()
 	if Input.is_key_pressed(KEY_RIGHT) and selected:
 		moveAlongPath(delta)
 	var col = move_and_collide(velocity*delta)
+func _physics_process(delta):
+	_physicsFrame(delta)
 func _draw():
 	var a = facing.angle()
 	if drawVision:
 		draw_arc(Vector2(), SIGHTRANGE/2, a-SIGHTANGLE/2, a+SIGHTANGLE/2,
 			10, Color(0.5,0.1,0.1,0.2), SIGHTRANGE)
 	#draw_circle(Vector2(), SIGHTRANGE, Color.rebeccapurple)
-#func _unhandled_key_input(event):
-#	if event.scancode == KEY_K:
-#		print(canSeePlayer())
+func _unhandled_key_input(event):
+	if level.debugmode and event.scancode == KEY_K and event.pressed:
+		print(canSeePlayer())
+	if level.debugmode and event.scancode == KEY_L and event.pressed:
+		print(getAllSeeableEnemies())
 	
 
 func _unhandled_input(event):

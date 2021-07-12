@@ -22,6 +22,7 @@ _global_script_class_icons={
 
 config/name="GDS treasury Heist"
 run/main_scene="res://Level.tscn"
+boot_splash/image="res://Assets/Moneybag.png"
 config/icon="res://icon.png"
 
 [physics]
